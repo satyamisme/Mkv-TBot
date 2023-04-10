@@ -149,78 +149,71 @@ def take_screenshot(client, message):
             caption="Screenshot of the latest version of the webpage",
         )
 
-# Define a command handler for "/links" command
+# Regex patterns to extract resolution and format
+res_pattern = re.compile(r"\b(\d+p)\b")
+fmt_pattern = re.compile(r"\b(HEVC|10-bit|Web-DL|NF)\b")
+
+
 @app.on_message(filters.command("links"))
-def get_links(client, message):
-    # Get the URL from the command arguments
+async def get_links(client, message):
+    # Get the URL from the command message
+    url = message.text.split()[1]
+
     try:
-        url = message.text.split(" ", 1)[1]
-    except IndexError:
-        message.reply_text("Please provide a Link.")
-        return
+        response = requests.get(url)
+        html = response.content
+        soup = BeautifulSoup(html, "html.parser")
 
-    # Fetch the HTML content of the URL
-    response = requests.get(url)
-    html_content = response.text
+        # Initialize dictionaries to hold movies by resolution and format
+        resolutions = {"480p": [], "720p": [], "1080p": []}
+        formats = {"HEVC": [], "10-bit": [], "Web-DL": [], "NF": []}
 
-    # Parse the HTML content using BeautifulSoup
-    soup = BeautifulSoup(html_content, "html.parser")
-
-    # Find all the links with the class "gdlink"
-    gdlinks = soup.find_all("a", class_="gdlink")
-
-    if gdlinks:
-        # Define regular expressions to match the resolution of the video
-        pattern_480p = re.compile(r"\b480p\b", re.IGNORECASE)
-        pattern_720p = re.compile(r"\b720p\b", re.IGNORECASE)
-        pattern_1080p = re.compile(r"\b1080p\b", re.IGNORECASE)
-
-        # Initialize a dictionary to store the links by resolution
-        links = {"480p": [], "720p": [], "1080p": [], "Unknown": []}
-
-        # Loop through each link and categorize them based on the resolution
-        for link in gdlinks:
+        # Find all elements with download links
+        for link in soup.find_all("a", href=True):
             href = link.get("href")
-            title = link.get("title")
-            if "s0" in title.lower():
-                resolution = None
-                if pattern_480p.search(title):
-                    resolution = "480p"
-                elif pattern_720p.search(title):
-                    resolution = "720p"
-                elif pattern_1080p.search(title):
-                    resolution = "1080p"
-                else:
-                    resolution = "Unknown"
-                links[resolution].append((title, href))
+            title = link.get_text()
 
-        # Send the links and titles in each category as separate messages
-        if any(links.values()):
-            for resolution, link_list in links.items():
-                if link_list:
-                    response_msg = f"{resolution} links:\n"
-                    for i, (title, href) in enumerate(link_list, start=1):
-                        response_msg += f"{i}. <a href='{href}'>{title}</a>\n"
-                    message.reply_text(response_msg, disable_web_page_preview=True)
-        else:
-            # Prepare a response message for "gdlink" class links
-            response_msg = ""
-            for i, gdlink in enumerate(gdlinks, start=1):
-                title = gdlink.text.strip()
-                hyperlink = gdlink["href"]
-                response_msg += f'{i}. [{title}]({hyperlink})\n'
-            message.reply_text(response_msg, disable_web_page_preview=True)
-    else:
-        # Find all links that contain f"{MKV_DOMAIN}?"
-        all_links = soup.find_all("a", href=lambda href: href and f"{MKV_DOMAIN}?" in href)
+            # Check if the link contains "https://ww3.mkvcinemas.lat" and has the class of gdlink
+            if "https://ww3.mkvcinemas.lat?" in href and "gdlink" in link.get("class"):
+                # Extract the resolution and format from the title using regex
+                resolution = res_pattern.search(title)
+                format_ = fmt_pattern.search(title)
 
-        # Prepare a response message for the found links
-        response_msg = ""
-        for i, link in enumerate(all_links, start=1):
-            text = link.text.strip()
-            hyperlink = link["href"]
-            response_msg += f'{i}. [{text}]({hyperlink})\n'
-        message.reply_text(response_msg, disable_web_page_preview=True)
+                # Categorize the movie by resolution and format
+                if resolution and format_:
+                    resolution = resolution.group(1)
+                    format_ = format_.group(1)
+                    category = f"{resolution} {format_}"
+                    resolutions.setdefault(category, []).append((href, title))
+                elif resolution:
+                    resolution = resolution.group(1)
+                    resolutions.setdefault(resolution, []).append((href, title))
+
+        # Send the movies grouped by category
+        serial_number = 1
+        for cat, movies in resolutions.items():
+            if movies:
+                # Create a list of all movie hyperlinks for this category
+                movie_links = [f"{serial_number}. [{movie[1]}]({movie[0]})" for movie in movies]
+                serial_number += 1
+                # Join the list of movie hyperlinks with newlines
+                movie_links_str = "\n".join(movie_links)
+                # Send the category name and all movie hyperlinks in a single message
+                await message.reply(f"{cat}:\n{movie_links_str}", disable_web_page_preview=True)
+            else:
+                # If there are no category-wise movies, add the resolution-wise links to a list
+                resolution = cat.split()[0]
+                links = [f"{serial_number}. [{title}]({href})" for link in soup.find_all("a", href=True)
+                         if resolution in link.get_text() and
+                         "https://ww3.mkvcinemas.lat?" in link.get("href") and
+                         "gdlink" in link.get("class") and
+                         not fmt_pattern.search(link.get_text())]
+                # Send all resolution-wise links in a single message
+                if links:
+                    await message.reply(f"{resolution}:\n" + "\n".join(links), disable_web_page_preview=True)
+
+    except Exception as e:
+        await message.reply(f"Error: {str(e)}")
 
 
 # Define the process_link function
