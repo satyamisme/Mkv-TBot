@@ -1,14 +1,16 @@
-from bs4 import BeautifulSoup
-import requests
+#!/usr/bin/env python
+
+import re
 import io
 from PIL import Image
-from pyrogram import Client, filters
-from pyrogram.types import Message
-from playwright.sync_api import Playwright, sync_playwright
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-import configparser
-import re
 
+import configparser
+import requests
+from bs4 import BeautifulSoup
+
+from pyrogram import Client, filters
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from playwright.sync_api import Playwright, sync_playwright
 
 # Load config file using configparser
 config = configparser.ConfigParser()
@@ -20,11 +22,13 @@ api_hash = config['Telegram']['API_HASH']
 bot_token = config['Telegram']['BOT_TOKEN']
 
 # Create a new Pyrogram client
-app = Client("my_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
+app = Client("Mkv-TBot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
+
+MKV_DOMAIN = "https://ww3.mkvcinemas.lat"
 
 def scrape(query):
     # Construct the URL for the search query
-    url = f"https://ww3.mkvcinemas.lat/?s={query}"
+    url = f"{MKV_DOMAIN}/?s={query}"
     response = requests.get(url)
 
     # Parse the HTML content of the website using BeautifulSoup
@@ -45,13 +49,13 @@ def scrape(query):
             return {'href': href, 'title': title, 'thumbnail': thumbnail}
     return None
 
-@ app.on_message(filters.command('search'))
-def search(client, message):
+@app.on_message(filters.command('search'))
+async def search(client: Client, message: Message):
     # Get the search query from the message text and replace spaces with '+'
     try:
         query = message.text.split(' ', 1)[1].replace(' ', '+')
     except IndexError:
-        message.reply_text("Please provide a search query.")
+        await message.reply_text("Please provide a search query.")
         return
 
     # Scrape the website for the first search result
@@ -59,16 +63,16 @@ def search(client, message):
 
     # Send the search result as a reply to the user
     if search_result:
-        caption = f"title: {search_result['title']}\nhref: {search_result['href']}"
-        message.reply_text(caption)
+        caption = f"Title: {search_result['title']}\nLink: {search_result['href']}"
+        await message.reply_text(caption)
     else:
-        message.reply_text("No search results found.")
+        await message.reply_text("No search results found.")
 
 # Define the command handler
 @app.on_message(filters.command("latest"))
 def take_screenshot(client, message):
     # Get the URL of the webpage
-    url = "https://ww3.mkvcinemas.lat/category/all-movies-and-tv-shows/"
+    url = f"{MKV_DOMAIN}/category/all-movies-and-tv-shows/"
 
     # Launch the browser with Playwright
     with sync_playwright() as playwright:
@@ -162,8 +166,8 @@ def get_links(client, message):
                 response_msg += f'{i}. [{title}]({hyperlink})\n'
             message.reply_text(response_msg, disable_web_page_preview=True)
     else:
-        # Find all links that contain "https://ww3.mkvcinemas.lat?"
-        all_links = soup.find_all("a", href=lambda href: href and "https://ww3.mkvcinemas.lat?" in href)
+        # Find all links that contain f"{MKV_DOMAIN}?"
+        all_links = soup.find_all("a", href=lambda href: href and f"{MKV_DOMAIN}?" in href)
 
         # Prepare a response message for the found links
         response_msg = ""
@@ -290,8 +294,6 @@ def mkvcinemas(client: Client, message: Message):
     except Exception as e:
         # When an error occurs during the processing of the link
         message.reply_text(f"An error occurred while processing the link: {e}", quote=True)
-
-
 
 
 # Start the bot
