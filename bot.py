@@ -10,7 +10,6 @@ from PIL import Image
 import configparser
 import requests
 from bs4 import BeautifulSoup
-from telegraph import upload_file
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
 from playwright.sync_api import Playwright, sync_playwright
@@ -115,9 +114,7 @@ async def post_result(m: Message, msg, search_result, reply_keyboard, edit=False
         if msg:
             await msg.delete()
         if edit:
-            tele = upload_file(thumbnail_path)
-            LOG.info(tele)
-            await m.edit_media(InputMediaPhoto(media=tele, caption=caption), reply_markup=reply_keyboard)
+            await m.edit_media(InputMediaPhoto(media="https://i.imgur.com/arOB1y2.jpg", caption=caption), reply_markup=reply_keyboard)
         else:
             await m.reply_photo(photo=thumbnail_path, caption=caption, reply_markup=reply_keyboard)
         os.remove(thumbnail_path)
@@ -137,7 +134,7 @@ async def cb_handler(c: Client, cb: CallbackQuery):
         await cb.answer()
         return
     result = scrape(qdata[3], qdata[2])
-    reply_keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("⌫", callback_data=f"search pre {qdata[2]} {qdata[3]}"), InlineKeyboardButton(f"ᴘᴏsᴛs\n{qdata[2]} / {result['posts']}", callback_data=f"search posts {qdata[2]} {qdata[3]}"), InlineKeyboardButton("⌦", callback_data=f"search nex {qdata[2]} {qdata[3]}")]])
+    reply_keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("⌫", callback_data=f"search pre {qdata[2]} {qdata[3]}"), InlineKeyboardButton(f"ᴘᴏsᴛs\n{qdata[2]+1} / {result['posts']}", callback_data=f"search posts {qdata[2]} {qdata[3]}"), InlineKeyboardButton("⌦", callback_data=f"search nex {qdata[2]} {qdata[3]}")]])
     await post_result(cb.message, None, result, reply_keyboard, True)
     await cb.answer()
 
