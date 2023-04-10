@@ -65,7 +65,7 @@ def scrape(query):
             resp = requests.get(href)
             nsoup = BeautifulSoup(resp.content, 'html.parser')
             thumb = nsoup.find('meta', {'property': 'og:image'})
-            thumbnail = thumb['content']
+            thumbnail = thumb['content'] if thumb else None
 
         # Return a dictionary containing the href, title, and thumbnail
         if title and href:
@@ -97,7 +97,7 @@ async def search(client: Client, message: Message):
             if not os.path.exists("thumbnails"):
                 os.makedirs("thumbnails")
             # Download the image from the URL using requests
-            image_url = search_result['thumbnail'].replace("w300", "w1280")
+            image_url = search_result[0]['thumbnail'].replace("w300", "w1280")
             response = requests.get(image_url)
             image_data = response.content
             # Save the image as a thumbnail in a folder called "thumbnails"
