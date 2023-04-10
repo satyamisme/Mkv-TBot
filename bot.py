@@ -96,7 +96,7 @@ async def search(client: Client, message: Message):
     else:
         await msg.edit("No search results found.")
 
-async def post_result(m: Message, msg, search_result, edit=False, reply_keyboard):
+async def post_result(m: Message, msg, search_result, reply_keyboard, edit=False):
     caption = f"<b>Title :</b> <i>{search_result['title']}</i>\n\n<b>Link :</b> {search_result['href']}"
     if search_result['thumbnail']:
         # Check if the "thumbnails" directory exists and create it if it doesn't
@@ -133,7 +133,8 @@ async def cb_handler(c: Client, cb: CallbackQuery):
         await cb.answer()
         return
     result = scrape(qdata[3], qdata[2])
-    await post_result(cb.message, None, result, True)
+    reply_keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("⌫", callback_data=f"search pre {qdata[2]} {qdata[3]}"), InlineKeyboardButton(f"ᴘᴏsᴛs\n{qdata[2]} / {result['posts']}", callback_data=f"search posts {qdata[2]} {qdata[3]}"), InlineKeyboardButton("⌦", callback_data=f"search nex {qdata[2]} {qdata[3]}")]])
+    await post_result(cb.message, None, result, reply_keyboard, True)
     await cb.answer()
 
 # Define the command handler
