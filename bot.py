@@ -4,6 +4,7 @@ import re
 import io
 import os
 import logging
+from asyncio import sleep as asleep
 from datetime import datetime
 from logging import FileHandler, StreamHandler, INFO, basicConfig, error as log_error, info as log_info
 from logging.handlers import RotatingFileHandler
@@ -176,7 +177,7 @@ def take_screenshot(client, message):
         client.send_photo(
             chat_id=message.chat.id,
             photo=bio,
-            caption=f"<b>MkvCinemas Latest Screenshot of the WebPage</b>\n\n<i><b>⏰️ Time :</b> {datetime.now()}</i>",
+            caption=f"<b>MkvCinemas Latest Screenshot of the WebPage</b>\n\n<i><b>⏰️ Time:</b> {datetime.now()}</i>",
         )
 
 # Regex patterns to extract resolution and format
@@ -230,10 +231,8 @@ async def get_links(client, message):
                 # Create a list of all movie hyperlinks for this category
                 movie_links = [f"{serial_number}. [{movie[1]}]({movie[0]})" for movie in movies]
                 serial_number += 1
-                # Join the list of movie hyperlinks with newlines
-                movie_links_str = "\n".join(movie_links)
                 # Send the category name and all movie hyperlinks in a single message
-                await message.reply(f"{cat}:\n{movie_links_str}", disable_web_page_preview=True)
+                await message.reply(f"<b>{cat}:</b>\n{'\n'.join(movie_links)}", disable_web_page_preview=True)
             else:
                 # If there are no category-wise movies, add the resolution-wise links to a list
                 resolution = cat.split()[0]
@@ -244,7 +243,9 @@ async def get_links(client, message):
                          not fmt_pattern.search(link.get_text())]
                 # Send all resolution-wise links in a single message
                 if links:
-                    await message.reply(f"{resolution}:\n" + "\n".join(links), disable_web_page_preview=True)
+                    await message.reply(f"<b>{resolution}:</b>\n" + "\n".join(links), disable_web_page_preview=True)
+            # Sleep to fill up Sleep Theshold
+            await asleep(1.5)
 
     except Exception as e:
         await message.reply(f"Error: {str(e)}")
