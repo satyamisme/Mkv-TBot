@@ -35,12 +35,12 @@ def scrape(query):
     soup = BeautifulSoup(response.content, 'html.parser')
 
     # Find the first element that has both "ml-mask" and "jt" as its class attributes
-    element = soup.find(class_=["ml-mask", "jt"])
+    elems = soup.find_all(class_=["ml-mask", "jt"])
 
     # Extract the href, title, and thumbnail attributes from the first element
-    if element:
-        href = element.get('href')
-        title = element.get('oldtitle')
+    if elems:
+        href = element[0].get('href')
+        title = element[0].get('oldtitle')
         if href:
             resp = requests.get(href)
             nsoup = BeautifulSoup(resp.content, 'html.parser')
