@@ -1,9 +1,10 @@
-pyrogram
-requests
+aiohttp==3.8.1
 beautifulsoup4
 Flask==2.2.2
 gunicorn==20.1.0
-aiohttp==3.8.1
+Pillow
 playwright
 psutil
-Pillow
+pyrogram
+requests
+TgCrypto
