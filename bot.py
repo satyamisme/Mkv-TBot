@@ -3,6 +3,8 @@
 import re
 import io
 import logging
+from logging import FileHandler, StreamHandler, INFO, basicConfig, error as log_error, info as log_info
+from logging.handlers import RotatingFileHandler
 from PIL import Image
 import configparser
 import requests
