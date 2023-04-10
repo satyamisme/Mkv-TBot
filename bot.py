@@ -92,11 +92,11 @@ async def search(client: Client, message: Message):
 
     # Send the search result as a reply to the user
     if search_result:
-        await post_result(message, msg, search_result)
+        await post_result(message, msg, search_result, reply_keyboard)
     else:
         await msg.edit("No search results found.")
 
-async def post_result(message, msg, search_result, edit=False):
+async def post_result(message, msg, search_result, edit=False, rply):
     caption = f"<b>Title :</b> <i>{search_result['title']}</i>\n\n<b>Link :</b> {search_result['href']}"
     if search_result['thumbnail']:
         # Check if the "thumbnails" directory exists and create it if it doesn't
@@ -115,12 +115,12 @@ async def post_result(message, msg, search_result, edit=False):
         if msg:
             await msg.delete()
         if edit:
-            await message.edit_media(InputMediaPhoto(thumbnail_path, caption=caption), reply_markup=reply_keyboard)
+            await message.edit_media(InputMediaPhoto(thumbnail_path, caption=caption), reply_markup=rply)
         else:
-            await message.reply_photo(photo=thumbnail_path, caption=caption, reply_markup=reply_keyboard)
+            await message.reply_photo(photo=thumbnail_path, caption=caption, reply_markup=rply)
         os.remove(thumbnail_path)
     else:
-        await msg.edit(caption, disable_web_page_preview=True, reply_markup=reply_keyboard)
+        await msg.edit(caption, disable_web_page_preview=True, reply_markup=rply)
 
 @app.on_callback_query(filters.regex('^search'))
 async def cb_handler(c: Client, cb: CallbackQuery):
