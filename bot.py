@@ -55,22 +55,22 @@ def scrape(query):
 
     # Find the first element that has both "ml-mask" and "jt" as its class attributes
     elems = soup.find_all(class_=["ml-mask", "jt"])
-    LOG.info(elems)
+    
     # Extract the href, title, and thumbnail attributes from the first element
-    if elems:
-        href = elems[0].get('href')
-        title = elems[0].get('oldtitle')
+    QDATA = list()
+    for elem in elems:
+        href = elem.get('href')
+        title = elem.get('oldtitle')
         if href:
             resp = requests.get(href)
             nsoup = BeautifulSoup(resp.content, 'html.parser')
             thumb = nsoup.find('meta', {'property': 'og:image'})
             thumbnail = thumb['content']
-            LOG.info(thumbnail)
 
         # Return a dictionary containing the href, title, and thumbnail
         if title and href:
-            return {'href': href, 'title': title, 'thumbnail': thumbnail}
-    return None
+            QDATA.append({'href': href, 'title': title, 'thumbnail': thumbnail})
+    return QDATA
 
 @app.on_message(filters.command('search'))
 async def search(client: Client, message: Message):
@@ -81,19 +81,23 @@ async def search(client: Client, message: Message):
         await message.reply_text("Please provide a search query.")
         return
 
+    # Generate Wait Msg
+    msg = await message.reply_text("Searching...")
+
     # Scrape the website for the first search result
     search_result = scrape(query)
-    LOG.info(search_result)
+
+    reply_keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("◀◀", callback_data="search pre"), InlineKeyboardButton(f"ᴘᴏsᴛs\n / {len(search_result)}", callback_data="search post"), InlineKeyboardButton("▶▶", callback_data="search nex")]])
 
     # Send the search result as a reply to the user
     if search_result:
-        caption = f"Title: {search_result['title']}\nLink: {search_result['href']}"
-        if search_result['thumbnail']:
+        caption = f"<b>Title :</b> <i>{search_result[0]['title']}</i>\n\n<b>Link :</b> {search_result[0]['href']}"
+        if search_result[0]['thumbnail']:
             # Check if the "thumbnails" directory exists and create it if it doesn't
             if not os.path.exists("thumbnails"):
                 os.makedirs("thumbnails")
             # Download the image from the URL using requests
-            image_url = search_result['thumbnail']
+            image_url = search_result['thumbnail'].replace("w300", "w1280")
             response = requests.get(image_url)
             image_data = response.content
             # Save the image as a thumbnail in a folder called "thumbnails"
@@ -102,12 +106,13 @@ async def search(client: Client, message: Message):
             with open(thumbnail_path, "wb") as f:
                 f.write(image_data)
             # Send the thumbnail with the caption to the chat
-            await message.reply_photo(photo=thumbnail_path, caption=caption)
+            await msg.delete()
+            await message.reply_photo(photo=thumbnail_path, caption=caption, reply_markup=reply_keyboard)
             os.remove(thumbnail_path)
         else:
-            await message.reply_text(caption, disable_web_page_preview=True)
+            await msg.edit(caption, disable_web_page_preview=True, reply_markup=reply_keyboard)
     else:
-        await message.reply_text("No search results found.")
+        await msg.edit("No search results found.")
 
 # Define the command handler
 @app.on_message(filters.command("latest"))
