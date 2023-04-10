@@ -12,7 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
 from playwright.sync_api import Playwright, sync_playwright
 
 # Logging Utils
@@ -115,7 +115,7 @@ async def post_result(message, msg, search_result, edit=False):
         if msg:
             await msg.delete()
         if edit:
-            1 #await 
+            await message.edit_media(InputMediaPhoto(thumbnail_path, caption=caption), reply_markup=reply_keyboard)
         else:
             await message.reply_photo(photo=thumbnail_path, caption=caption, reply_markup=reply_keyboard)
         os.remove(thumbnail_path)
