@@ -12,6 +12,20 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from playwright.sync_api import Playwright, sync_playwright
 
+# Logging Utils
+basicConfig(
+    level=INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s [%(filename)s:%(lineno)d]",
+    datefmt="%d-%b-%y %I:%M:%S %p",
+    handlers=[
+        RotatingFileHandler(
+            "log.txt", maxBytes=50000000, backupCount=10
+        ),
+        StreamHandler(),
+    ],
+)
+
+logging.getLogger("pyrogram").setLevel(logging.ERROR)
 LOG = logging.getLogger(__name__)
 
 # Load config file using configparser
