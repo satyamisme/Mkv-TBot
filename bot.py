@@ -4,6 +4,7 @@ import re
 import io
 import os
 import logging
+from datetime import datetime
 from logging import FileHandler, StreamHandler, INFO, basicConfig, error as log_error, info as log_info
 from logging.handlers import RotatingFileHandler
 from PIL import Image
@@ -77,7 +78,7 @@ async def search(client: Client, message: Message):
     try:
         query = message.text.split(' ', 1)[1].replace(' ', '+')
     except IndexError:
-        await message.reply_text("Please provide a search query.")
+        await message.reply_text("Please provide a search query.", quote=True)
         return
 
     # Generate Wait Msg
@@ -175,7 +176,7 @@ def take_screenshot(client, message):
         client.send_photo(
             chat_id=message.chat.id,
             photo=bio,
-            caption="Screenshot of the latest version of the webpage",
+            caption=f"<b>MkvCinemas Latest Screenshot of the WebPage</b>\n\n<i><b>⏰️ Time :</b> {datetime.now()}</i>",
         )
 
 # Regex patterns to extract resolution and format
@@ -186,7 +187,11 @@ fmt_pattern = re.compile(r"\b(HEVC|10-bit|Web-DL|NF)\b")
 @app.on_message(filters.command("links"))
 async def get_links(client, message):
     # Get the URL from the command message
-    url = message.text.split()[1]
+    try:
+        url = message.text.split()[1]
+    except IndexError:
+        await message.reply_text("Please provide the URL.", quote=True)
+        return
 
     try:
         response = requests.get(url)
