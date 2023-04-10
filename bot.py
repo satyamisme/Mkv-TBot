@@ -119,7 +119,11 @@ def take_screenshot(client, message):
 @app.on_message(filters.command("links"))
 def get_links(client, message):
     # Get the URL from the command arguments
-    url = message.text.split(" ", 1)[1]
+    try:
+        url = message.text.split(" ", 1)[1]
+    except IndexError:
+        message.reply_text("Please provide a Link.")
+        return
 
     # Fetch the HTML content of the URL
     response = requests.get(url)
