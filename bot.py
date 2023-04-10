@@ -2,8 +2,8 @@
 
 import re
 import io
+import logging
 from PIL import Image
-
 import configparser
 import requests
 from bs4 import BeautifulSoup
@@ -11,6 +11,8 @@ from bs4 import BeautifulSoup
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from playwright.sync_api import Playwright, sync_playwright
+
+LOG = logging.getLogger(__name__)
 
 # Load config file using configparser
 config = configparser.ConfigParser()
@@ -36,7 +38,7 @@ def scrape(query):
 
     # Find the first element that has both "ml-mask" and "jt" as its class attributes
     elems = soup.find_all(class_=["ml-mask", "jt"])
-
+    LOG.info(elems)
     # Extract the href, title, and thumbnail attributes from the first element
     if elems:
         href = elems[0].get('href')
@@ -46,7 +48,7 @@ def scrape(query):
             nsoup = BeautifulSoup(resp.content, 'html.parser')
             thumb = nsoup.find('meta', {'property': 'og:image'})
             thumbnail = thumb['content']
-            print(thumbnail)
+            LOG.info(thumbnail)
 
         # Return a dictionary containing the href, title, and thumbnail
         if title and href:
@@ -64,6 +66,7 @@ async def search(client: Client, message: Message):
 
     # Scrape the website for the first search result
     search_result = scrape(query)
+    LOG.info(search_result)
 
     # Send the search result as a reply to the user
     if search_result:
