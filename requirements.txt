@@ -6,5 +6,6 @@ Pillow
 playwright
 psutil
 pyrogram
+python-dotenv
 requests
 TgCrypto
