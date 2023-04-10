@@ -12,7 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from playwright.sync_api import Playwright, sync_playwright
 
 # Logging Utils
@@ -45,7 +45,7 @@ app = Client("Mkv-TBot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
 MKV_DOMAIN = "https://ww3.mkvcinemas.lat"
 
-def scrape(query):
+def scrape(query, index=0):
     # Construct the URL for the search query
     url = f"{MKV_DOMAIN}/?s={query}"
     response = requests.get(url)
@@ -57,20 +57,20 @@ def scrape(query):
     elems = soup.find_all(class_=["ml-mask", "jt"])
     
     # Extract the href, title, and thumbnail attributes from the first element
-    QDATA = list()
-    for elem in elems:
-        href = elem.get('href')
-        title = elem.get('oldtitle')
-        if href:
-            resp = requests.get(href)
-            nsoup = BeautifulSoup(resp.content, 'html.parser')
-            thumb = nsoup.find('meta', {'property': 'og:image'})
-            thumbnail = thumb['content'] if thumb else None
+    for loop, elem in enumerate(elems):
+        if index == loop:
+            href = elem.get('href')
+            title = elem.get('oldtitle')
+            if href:
+                resp = requests.get(href)
+                nsoup = BeautifulSoup(resp.content, 'html.parser')
+                thumb = nsoup.find('meta', {'property': 'og:image'})
+                thumbnail = thumb['content'] if thumb else None
 
-        # Return a dictionary containing the href, title, and thumbnail
-        if title and href:
-            QDATA.append({'href': href, 'title': title, 'thumbnail': thumbnail})
-    return QDATA
+            # Return a dictionary containing the href, title, and thumbnail
+            if title and href:
+                return {'href': href, 'title': title, 'thumbnail': thumbnail, 'posts': len(elems)})
+    return None
 
 @app.on_message(filters.command('search'))
 async def search(client: Client, message: Message):
@@ -87,32 +87,54 @@ async def search(client: Client, message: Message):
     # Scrape the website for the first search result
     search_result = scrape(query)
 
-    reply_keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("◀◀", callback_data="search pre"), InlineKeyboardButton(f"ᴘᴏsᴛs\n / {len(search_result)}", callback_data="search post"), InlineKeyboardButton("▶▶", callback_data="search nex")]])
+    # Generate a Custom Keyboard
+    reply_keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("⌫", callback_data=f"search pre 0 {query}"), InlineKeyboardButton(f"ᴘᴏsᴛs\n1 / {search_result['posts']}", callback_data=f"search posts 0 {query}"), InlineKeyboardButton("⌦", callback_data=f"search nex 0 {query}")]])
 
     # Send the search result as a reply to the user
     if search_result:
-        caption = f"<b>Title :</b> <i>{search_result[0]['title']}</i>\n\n<b>Link :</b> {search_result[0]['href']}"
-        if search_result[0]['thumbnail']:
-            # Check if the "thumbnails" directory exists and create it if it doesn't
-            if not os.path.exists("thumbnails"):
-                os.makedirs("thumbnails")
-            # Download the image from the URL using requests
-            image_url = search_result[0]['thumbnail'].replace("w300", "w1280")
-            response = requests.get(image_url)
-            image_data = response.content
-            # Save the image as a thumbnail in a folder called "thumbnails"
-            thumbnail_filename = os.path.basename(image_url)
-            thumbnail_path = os.path.join("thumbnails", thumbnail_filename)
-            with open(thumbnail_path, "wb") as f:
-                f.write(image_data)
-            # Send the thumbnail with the caption to the chat
-            await msg.delete()
-            await message.reply_photo(photo=thumbnail_path, caption=caption, reply_markup=reply_keyboard)
-            os.remove(thumbnail_path)
-        else:
-            await msg.edit(caption, disable_web_page_preview=True, reply_markup=reply_keyboard)
+        await post_result(message, msg, search_result)
     else:
         await msg.edit("No search results found.")
+
+async def post_result(message, msg, search_result, edit=False):
+    caption = f"<b>Title :</b> <i>{search_result['title']}</i>\n\n<b>Link :</b> {search_result['href']}"
+    if search_result['thumbnail']:
+        # Check if the "thumbnails" directory exists and create it if it doesn't
+        if not os.path.exists("thumbnails"):
+            os.makedirs("thumbnails")
+        # Download the image from the URL using requests
+        image_url = search_result['thumbnail'].replace("w300", "w1280")
+        response = requests.get(image_url)
+        image_data = response.content
+        # Save the image as a thumbnail in a folder called "thumbnails"
+        thumbnail_filename = os.path.basename(image_url)
+        thumbnail_path = os.path.join("thumbnails", thumbnail_filename)
+        with open(thumbnail_path, "wb") as f:
+            f.write(image_data)
+        # Send the thumbnail with the caption to the chat
+        if msg:
+            await msg.delete()
+        if edit:
+            1 #await 
+        else:
+            await message.reply_photo(photo=thumbnail_path, caption=caption, reply_markup=reply_keyboard)
+        os.remove(thumbnail_path)
+    else:
+        await msg.edit(caption, disable_web_page_preview=True, reply_markup=reply_keyboard)
+
+@app.on_callback_query(filters.regex('^search'))
+async def cb_handler(c: Client, cb: CallbackQuery):
+    qdata = cb.data.split()
+    if qdata[1] == "pre":
+        qdata[2] -= 1
+    elif qdata[1] == "nex":
+        qdata[2] += 1
+    elif qdata[1] == "posts":
+        await cb.answer()
+        return
+    result = scrape(qdata[3], qdata[2])
+    await post_result(cb.message, None, result, True)
+    await cb.answer()
 
 # Define the command handler
 @app.on_message(filters.command("latest"))
