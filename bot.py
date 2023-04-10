@@ -39,8 +39,8 @@ def scrape(query):
 
     # Extract the href, title, and thumbnail attributes from the first element
     if elems:
-        href = element[0].get('href')
-        title = element[0].get('oldtitle')
+        href = elems[0].get('href')
+        title = elems[0].get('oldtitle')
         if href:
             resp = requests.get(href)
             nsoup = BeautifulSoup(resp.content, 'html.parser')
