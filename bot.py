@@ -69,7 +69,7 @@ def scrape(query, index=0):
 
             # Return a dictionary containing the href, title, and thumbnail
             if title and href:
-                return {'href': href, 'title': title, 'thumbnail': thumbnail, 'posts': len(elems)})
+                return {'href': href, 'title': title, 'thumbnail': thumbnail, 'posts': len(elems)}
     return None
 
 @app.on_message(filters.command('search'))
