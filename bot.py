@@ -126,8 +126,10 @@ async def post_result(m: Message, msg, search_result, reply_keyboard, edit=False
 async def cb_handler(c: Client, cb: CallbackQuery):
     qdata = cb.data.split()
     if qdata[1] == "pre":
+        qdata[2] = int(qdata[2])
         qdata[2] -= 1
     elif qdata[1] == "nex":
+        qdata[2] = int(qdata[2])
         qdata[2] += 1
     elif qdata[1] == "posts":
         await cb.answer()
