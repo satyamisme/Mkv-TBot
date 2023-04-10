@@ -44,8 +44,9 @@ def scrape(query):
         if href:
             resp = requests.get(href)
             nsoup = BeautifulSoup(resp.content, 'html.parser')
-            thumb = nsoup.select('meta[property^="og:image"]')
-            thumbnail = thumb[0]['content']
+            thumb = nsoup.find('meta', {'property': 'og:image'})
+            thumbnail = thumb['content']
+            print(thumbnail)
 
         # Return a dictionary containing the href, title, and thumbnail
         if title and href:
@@ -68,7 +69,7 @@ async def search(client: Client, message: Message):
     if search_result:
         caption = f"Title: {search_result['title']}\nLink: {search_result['href']}"
         if search_result['thumbnail']:
-            await message.reply_photo(search_result['thumbnail'], caption)
+            await message.reply_photo(search_result['thumbnail'], caption=caption)
         else:
             await message.reply_text(caption, disable_web_page_preview=True)
     else:
