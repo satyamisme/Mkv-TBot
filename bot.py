@@ -41,8 +41,11 @@ def scrape(query):
     if element:
         href = element.get('href')
         title = element.get('oldtitle')
-        thumbnail_tag = soup.find('img', {'class': 'mli-thumb'})
-        thumbnail = thumbnail_tag['src'] if thumbnail_tag else None
+        if href:
+            resp = requests.get(href)
+            nsoup = BeautifulSoup(resp.content, 'html.parser')
+            thumb = nsoup.select('meta[property^="og:image"]')
+            thumbnail = thumb[0]['content']
 
         # Return a dictionary containing the href, title, and thumbnail
         if title and href:
@@ -64,7 +67,10 @@ async def search(client: Client, message: Message):
     # Send the search result as a reply to the user
     if search_result:
         caption = f"Title: {search_result['title']}\nLink: {search_result['href']}"
-        await message.reply_text(caption)
+        if search_result['thumbnail']:
+            await message.reply_photo(search_result['thumbnail'], caption)
+        else:
+            await message.reply_text(caption, disable_web_page_preview=True)
     else:
         await message.reply_text("No search results found.")
 
