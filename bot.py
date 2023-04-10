@@ -230,7 +230,6 @@ async def get_links(client, message):
             if movies:
                 # Create a list of all movie hyperlinks for this category
                 movie_links = [f"{serial}. [{movie[1]}]({movie[0]})" for serial, movie in enumerate(movies, start=serial_number)]
-                serial_number = serial
                 # Send the category name and all movie hyperlinks in a single message
                 await message.reply(f"<b>{cat}:</b>\n" + "\n".join(movie_links), disable_web_page_preview=True)
             else:
