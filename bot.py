@@ -2,6 +2,7 @@
 
 import re
 import io
+import os
 import logging
 from logging import FileHandler, StreamHandler, INFO, basicConfig, error as log_error, info as log_info
 from logging.handlers import RotatingFileHandler
@@ -88,7 +89,21 @@ async def search(client: Client, message: Message):
     if search_result:
         caption = f"Title: {search_result['title']}\nLink: {search_result['href']}"
         if search_result['thumbnail']:
-            await message.reply_photo(search_result['thumbnail'], caption=caption)
+            # Check if the "thumbnails" directory exists and create it if it doesn't
+            if not os.path.exists("thumbnails"):
+                os.makedirs("thumbnails")
+            # Download the image from the URL using requests
+            image_url = search_result['thumbnail']
+            response = requests.get(image_url)
+            image_data = response.content
+            # Save the image as a thumbnail in a folder called "thumbnails"
+            thumbnail_filename = os.path.basename(image_url)
+            thumbnail_path = os.path.join("thumbnails", thumbnail_filename)
+            with open(thumbnail_path, "wb") as f:
+                f.write(image_data)
+            # Send the thumbnail with the caption to the chat
+            await message.reply_photo(photo=thumbnail_path, caption=caption)
+            os.remove(thumbnail_path)
         else:
             await message.reply_text(caption, disable_web_page_preview=True)
     else:
