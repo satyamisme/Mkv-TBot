@@ -115,7 +115,8 @@ async def post_result(m: Message, msg, search_result, reply_keyboard, edit=False
         if msg:
             await msg.delete()
         if edit:
-            await m.edit_media(InputMediaPhoto(thumbnail_path, caption=caption), reply_markup=reply_keyboard)
+            LOG.info(thumbnail_path)
+            await m.edit_media(InputMediaPhoto(media=thumbnail_path, caption=caption), reply_markup=reply_keyboard)
         else:
             await m.reply_photo(photo=thumbnail_path, caption=caption, reply_markup=reply_keyboard)
         os.remove(thumbnail_path)
